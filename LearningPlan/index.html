@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UE C++ 学习进度追踪器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 1.1em;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.08);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,217,255,0.2);
+        }
+        
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+        
+        .stat-label {
+            color: #aaa;
+            margin-top: 5px;
+        }
+        
+        .progress-overall {
+            background: rgba(255,255,255,0.08);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .progress-bar-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border-radius: 10px;
+            transition: width 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .week-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .week-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .week-header {
+            background: linear-gradient(90deg, rgba(0,217,255,0.3), rgba(0,255,136,0.3));
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .week-title {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        .week-progress {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .week-content {
+            padding: 20px;
+        }
+        
+        .day-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .day-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .day-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #00d9ff;
+            border-radius: 6px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .day-checkbox.checked {
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            border-color: transparent;
+        }
+        
+        .day-checkbox.checked::after {
+            content: '✓';
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        
+        .day-info {
+            flex: 1;
+        }
+        
+        .day-title {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+        
+        .day-subtitle {
+            font-size: 0.85em;
+            color: #888;
+        }
+        
+        .day-link {
+            color: #00d9ff;
+            text-decoration: none;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .day-item:hover .day-link {
+            opacity: 1;
+        }
+        
+        .card-flip-game {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+        }
+        
+        .game-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #00ff88;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .game-card {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #2a2a4a, #1a1a3e);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        
+        .game-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .game-card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .game-card.matched {
+            opacity: 0.5;
+            cursor: default;
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 2em;
+        }
+        
+        .card-front {
+            background: linear-gradient(135deg, #3a3a5a, #2a2a4e);
+        }
+        
+        .card-front::after {
+            content: '?';
+            color: #00d9ff;
+        }
+        
+        .card-back {
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            transform: rotateY(180deg);
+        }
+        
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .game-stat {
+            text-align: center;
+        }
+        
+        .game-stat-value {
+            font-size: 1.5em;
+            color: #00d9ff;
+        }
+        
+        .reset-btn {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 15px;
+        }
+        
+        .reset-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0,217,255,0.4);
+        }
+        
+        .theme-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .theme-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .theme-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .theme-btn.cyan { background: #00d9ff; }
+        .theme-btn.green { background: #00ff88; }
+        .theme-btn.purple { background: #a855f7; }
+        .theme-btn.orange { background: #ff8800; }
+        
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .celebrate {
+            animation: celebrate 0.5s ease-in-out;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            transform: translateX(150%);
+            transition: transform 0.5s;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        /* Sound effect indicator */
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: #00d9ff;
+            transition: background 0.3s;
+        }
+        
+        .sound-toggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8em; }
+            .stat-number { font-size: 2em; }
+            .card-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+            .weeks-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle" id="soundToggle">🔊</button>
+    
+    <div class="theme-selector">
+        <div class="theme-btn cyan" data-color="#00d9ff"></div>
+        <div class="theme-btn green" data-color="#00ff88"></div>
+        <div class="theme-btn purple" data-color="#a855f7"></div>
+        <div class="theme-btn orange" data-color="#ff8800"></div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>🎮 UE C++ 学习进度追踪器</h1>
+            <p class="subtitle">8周学习计划 - 掌握20%核心知识，解决80%开发需求</p>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="completedDays">0</div>
+                <div class="stat-label">已完成天数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalDays">56</div>
+                <div class="stat-label">总天数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="streak">0</div>
+                <div class="stat-label">连续学习天数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="currentWeek">1</div>
+                <div class="stat-label">当前周</div>
+            </div>
+        </div>
+        
+        <div class="progress-overall">
+            <h2>📈 总体进度</h2>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+            </div>
+        </div>
+        
+        <div class="weeks-grid" id="weeksGrid">
+            <!-- Weeks will be generated by JavaScript -->
+        </div>
+        
+        <div class="card-flip-game">
+            <h2 class="game-title">🃏 记忆卡牌游戏 - 复习UE C++概念</h2>
+            <div class="game-stats">
+                <div class="game-stat">
+                    <div class="game-stat-value" id="moves">0</div>
+                    <div>步数</div>
+                </div>
+                <div class="game-stat">
+                    <div class="game-stat-value" id="matches">0</div>
+                    <div>配对</div>
+                </div>
+                <div class="game-stat">
+                    <div class="game-stat-value" id="timer">0:00</div>
+                    <div>时间</div>
+                </div>
+            </div>
+            <div class="card-grid" id="cardGrid">
+                <!-- Cards will be generated by JavaScript -->
+            </div>
+            <button class="reset-btn" id="resetGame">🔄 重新开始</button>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // Learning plan data
+        const learningPlan = [
+            {
+                week: 1,
+                title: "UE基础",
+                folder: "Week01_UE_Basics",
+                days: [
+                    { day: 1, title: "UE编辑器设置", file: "Day01_UE_Editor_Setup.md" },
+                    { day: 2, title: "UObject系统", file: "Day02_UObject_System.md" },
+                    { day: 3, title: "内存管理", file: "Day03_Memory_Management.md" },
+                    { day: 4, title: "UE类型", file: "Day04_UE_Types.md" },
+                    { day: 5, title: "日志与调试", file: "Day05_Logging_Debugging.md" },
+                    { day: 6, title: "模块系统", file: "Day06_Module_System.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 2,
+                title: "Blueprint与C++桥接",
+                folder: "Week02_Blueprint_CPP_Bridge",
+                days: [
+                    { day: 1, title: "BP/C++集成", file: "Day01_BP_CPP_Integration.md" },
+                    { day: 2, title: "委托与事件", file: "Day02_Delegates_Events.md" },
+                    { day: 3, title: "接口", file: "Day03_Interfaces.md" },
+                    { day: 4, title: "数据资产", file: "Day04_DataAssets.md" },
+                    { day: 5, title: "函数库", file: "Day05_FunctionLibrary.md" },
+                    { day: 6, title: "结构体与枚举", file: "Day06_Structs_Enums.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 3,
+                title: "Actor与组件",
+                folder: "Week03_Actor_Component",
+                days: [
+                    { day: 1, title: "Actor基础", file: "Day01_Actor_Fundamentals.md" },
+                    { day: 2, title: "组件系统", file: "Day02_Components.md" },
+                    { day: 3, title: "Pawn与Character", file: "Day03_Pawn_Character.md" },
+                    { day: 4, title: "增强输入", file: "Day04_Enhanced_Input.md" },
+                    { day: 5, title: "碰撞与物理", file: "Day05_Collision_Physics.md" },
+                    { day: 6, title: "定时器", file: "Day06_Timers.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 4,
+                title: "Gameplay框架",
+                folder: "Week04_Gameplay_Framework",
+                days: [
+                    { day: 1, title: "GameMode/GameState", file: "Day01_GameMode_GameState.md" },
+                    { day: 2, title: "PlayerController/PlayerState", file: "Day02_PlayerController_PlayerState.md" },
+                    { day: 3, title: "GAS入门", file: "Day03_GAS_Introduction.md" },
+                    { day: 4, title: "属性与效果", file: "Day04_Attributes_Effects.md" },
+                    { day: 5, title: "Gameplay Tags", file: "Day05_Gameplay_Tags.md" },
+                    { day: 6, title: "子系统", file: "Day06_Subsystems.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 5,
+                title: "UI/UMG",
+                folder: "Week05_UI_UMG",
+                days: [
+                    { day: 1, title: "UMG基础", file: "Day01_UMG_Basics.md" },
+                    { day: 2, title: "Widget绑定", file: "Day02_Widget_Binding.md" },
+                    { day: 3, title: "菜单系统", file: "Day03_Menu_System.md" },
+                    { day: 4, title: "背包UI", file: "Day04_Inventory_UI.md" },
+                    { day: 5, title: "对话与通知", file: "Day05_Dialog_Notifications.md" },
+                    { day: 6, title: "世界空间UI", file: "Day06_World_Space_UI.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 6,
+                title: "AI与导航",
+                folder: "Week06_AI_Navigation",
+                days: [
+                    { day: 1, title: "AI控制器", file: "Day01_AI_Controller.md" },
+                    { day: 2, title: "导航系统", file: "Day02_Navigation.md" },
+                    { day: 3, title: "行为树", file: "Day03_Behavior_Trees.md" },
+                    { day: 4, title: "EQS", file: "Day04_EQS.md" },
+                    { day: 5, title: "AI战斗", file: "Day05_AI_Combat.md" },
+                    { day: 6, title: "群体AI", file: "Day06_Crowd_AI.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 7,
+                title: "网络与多人",
+                folder: "Week07_Networking_Multiplayer",
+                days: [
+                    { day: 1, title: "网络基础", file: "Day01_Networking_Basics.md" },
+                    { day: 2, title: "RPC", file: "Day02_RPCs.md" },
+                    { day: 3, title: "移动同步", file: "Day03_Movement_Replication.md" },
+                    { day: 4, title: "Actor生成", file: "Day04_Actor_Spawning.md" },
+                    { day: 5, title: "状态同步", file: "Day05_Game_State_Sync.md" },
+                    { day: 6, title: "会话系统", file: "Day06_Sessions.md" },
+                    { day: 7, title: "周回顾", file: "Day07_Week_Review.md" }
+                ]
+            },
+            {
+                week: 8,
+                title: "项目整合",
+                folder: "Week08_Project_Integration",
+                days: [
+                    { day: 1, title: "项目架构", file: "Day01_Project_Architecture.md" },
+                    { day: 2, title: "核心系统", file: "Day02_Core_Systems.md" },
+                    { day: 3, title: "角色整合", file: "Day03_Character_Integration.md" },
+                    { day: 4, title: "战斗系统", file: "Day04_Combat_System.md" },
+                    { day: 5, title: "关卡工具", file: "Day05_Level_Tools.md" },
+                    { day: 6, title: "性能优化", file: "Day06_Performance.md" },
+                    { day: 7, title: "最终项目", file: "Day07_Final_Project.md" }
+                ]
+            }
+        ];
+        
+        // Card game concepts
+        const cardConcepts = [
+            { symbol: "🎮", name: "Actor" },
+            { symbol: "🧩", name: "Component" },
+            { symbol: "📡", name: "RPC" },
+            { symbol: "🔄", name: "Delegate" },
+            { symbol: "🏷️", name: "Tag" },
+            { symbol: "🎯", name: "GAS" },
+            { symbol: "🧠", name: "BT" },
+            { symbol: "🌐", name: "Network" }
+        ];
+        
+        // State
+        let progress = JSON.parse(localStorage.getItem('ueProgress') || '{}');
+        let soundEnabled = true;
+        let gameState = {
+            cards: [],
+            flipped: [],
+            matched: 0,
+            moves: 0,
+            timer: 0,
+            timerInterval: null
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderWeeks();
+            updateStats();
+            initCardGame();
+            setupThemeSelector();
+        });
+        
+        function renderWeeks() {
+            const grid = document.getElementById('weeksGrid');
+            grid.innerHTML = learningPlan.map(week => `
+                <div class="week-card">
+                    <div class="week-header">
+                        <span class="week-title">Week ${week.week}: ${week.title}</span>
+                        <span class="week-progress">${getWeekProgress(week.week)}/7</span>
+                    </div>
+                    <div class="week-content">
+                        ${week.days.map(day => {
+                            const key = `week${week.week}_day${day.day}`;
+                            const isChecked = progress[key];
+                            return `
+                                <div class="day-item" data-week="${week.week}" data-day="${day.day}">
+                                    <div class="day-checkbox ${isChecked ? 'checked' : ''}" 
+                                         onclick="toggleDay(event, ${week.week}, ${day.day})"></div>
+                                    <div class="day-info">
+                                        <div class="day-title">Day ${day.day}: ${day.title}</div>
+                                        <div class="day-subtitle">${week.folder}/${day.file}</div>
+                                    </div>
+                                    <a href="${week.folder}/${day.file}" class="day-link">📄 打开</a>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function toggleDay(event, week, day) {
+            event.stopPropagation();
+            const key = `week${week}_day${day}`;
+            progress[key] = !progress[key];
+            localStorage.setItem('ueProgress', JSON.stringify(progress));
+            
+            const checkbox = event.target;
+            checkbox.classList.toggle('checked');
+            
+            if (progress[key]) {
+                playSound('complete');
+                showNotification('✨ 完成! 继续加油!');
+                checkbox.classList.add('celebrate');
+                setTimeout(() => checkbox.classList.remove('celebrate'), 500);
+            }
+            
+            updateStats();
+        }
+        
+        function getWeekProgress(week) {
+            let count = 0;
+            for (let day = 1; day <= 7; day++) {
+                if (progress[`week${week}_day${day}`]) count++;
+            }
+            return count;
+        }
+        
+        function updateStats() {
+            const completed = Object.values(progress).filter(v => v).length;
+            const total = 56;
+            const percent = Math.round((completed / total) * 100);
+            
+            document.getElementById('completedDays').textContent = completed;
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressBar').textContent = percent + '%';
+            
+            // Calculate current week
+            let currentWeek = 1;
+            for (let w = 1; w <= 8; w++) {
+                if (getWeekProgress(w) < 7) {
+                    currentWeek = w;
+                    break;
+                }
+                currentWeek = 8;
+            }
+            document.getElementById('currentWeek').textContent = currentWeek;
+            
+            // Calculate streak (simplified)
+            document.getElementById('streak').textContent = calculateStreak();
+        }
+        
+        function calculateStreak() {
+            // Simple streak calculation
+            let streak = 0;
+            let completed = Object.entries(progress).filter(([k, v]) => v).length;
+            // This is a simplified version - in production you'd track dates
+            return Math.min(completed, 7);
+        }
+        
+        // Card Game
+        function initCardGame() {
+            const cards = [...cardConcepts, ...cardConcepts];
+            gameState.cards = shuffleArray(cards);
+            renderCards();
+        }
+        
+        function renderCards() {
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = gameState.cards.map((card, index) => `
+                <div class="game-card" data-index="${index}" onclick="flipCard(${index})">
+                    <div class="card-front"></div>
+                    <div class="card-back">${card.symbol}</div>
+                </div>
+            `).join('');
+        }
+        
+        function flipCard(index) {
+            const cards = document.querySelectorAll('.game-card');
+            const card = cards[index];
+            
+            if (card.classList.contains('flipped') || 
+                card.classList.contains('matched') ||
+                gameState.flipped.length >= 2) return;
+            
+            // Start timer on first flip
+            if (gameState.moves === 0 && gameState.flipped.length === 0) {
+                startTimer();
+            }
+            
+            card.classList.add('flipped');
+            gameState.flipped.push(index);
+            playSound('flip');
+            
+            if (gameState.flipped.length === 2) {
+                gameState.moves++;
+                document.getElementById('moves').textContent = gameState.moves;
+                
+                const [first, second] = gameState.flipped;
+                if (gameState.cards[first].symbol === gameState.cards[second].symbol) {
+                    // Match!
+                    setTimeout(() => {
+                        cards[first].classList.add('matched');
+                        cards[second].classList.add('matched');
+                        gameState.matched++;
+                        document.getElementById('matches').textContent = gameState.matched;
+                        playSound('match');
+                        
+                        if (gameState.matched === cardConcepts.length) {
+                            stopTimer();
+                            showNotification(`🎉 恭喜! ${gameState.moves}步完成!`);
+                        }
+                    }, 500);
+                } else {
+                    // No match
+                    setTimeout(() => {
+                        cards[first].classList.remove('flipped');
+                        cards[second].classList.remove('flipped');
+                    }, 1000);
+                }
+                
+                gameState.flipped = [];
+            }
+        }
+        
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                gameState.timer++;
+                const mins = Math.floor(gameState.timer / 60);
+                const secs = gameState.timer % 60;
+                document.getElementById('timer').textContent = 
+                    `${mins}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(gameState.timerInterval);
+        }
+        
+        document.getElementById('resetGame').addEventListener('click', () => {
+            stopTimer();
+            gameState = {
+                cards: shuffleArray([...cardConcepts, ...cardConcepts]),
+                flipped: [],
+                matched: 0,
+                moves: 0,
+                timer: 0,
+                timerInterval: null
+            };
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('matches').textContent = '0';
+            document.getElementById('timer').textContent = '0:00';
+            renderCards();
+        });
+        
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+        
+        // Sound
+        function playSound(type) {
+            if (!soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            const sounds = {
+                flip: { freq: 400, duration: 0.1 },
+                match: { freq: 600, duration: 0.2 },
+                complete: { freq: 800, duration: 0.3 }
+            };
+            
+            const sound = sounds[type] || sounds.flip;
+            oscillator.frequency.value = sound.freq;
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + sound.duration);
+        }
+        
+        document.getElementById('soundToggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+        });
+        
+        // Theme
+        function setupThemeSelector() {
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const color = btn.dataset.color;
+                    document.documentElement.style.setProperty('--primary-color', color);
+                    document.querySelectorAll('.stat-number, .day-link, .game-stat-value')
+                        .forEach(el => el.style.color = color);
+                });
+            });
+        }
+        
+        // Notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
